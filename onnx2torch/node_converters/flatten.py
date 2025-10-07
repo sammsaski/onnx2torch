@@ -29,8 +29,12 @@ class OnnxFlatten(nn.Module, OnnxToTorchModule):  # pylint: disable=missing-docs
 @add_converter(operation_type='Flatten', version=13)
 @add_converter(operation_type='Flatten', version=11)
 @add_converter(operation_type='Flatten', version=9)
+@add_converter(operation_type='Flatten', version=1)
 def _(node: OnnxNode, graph: OnnxGraph) -> OperationConverterResult:  # pylint: disable=unused-argument
-    axis = node.attributes.get('axis', 1)
+    axis = int(node.attributes.get('axis', 1))
+
+    if node.version < 11 and axis < 0:
+        raise ValueError(f'Flatten-{node.version} forbids negative axis (got {axis}).')
     torch_module = OnnxFlatten.maybe_create_simple_flatten(axis=axis)
 
     return OperationConverterResult(
